@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bluff & Baffle</title>
+  
+  <!-- Fonts: Plus Jakarta Sans & Hind for Devanagari -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Hind', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            zinc: {
+              850: '#1f1f23',
+              925: '#111115',
+              950: '#09090b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Hind', system-ui, -apple-system, sans-serif;
+      background-color: #09090b;
+      color: #f4f4f5;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* Subtle background grid pattern */
+    .bg-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+
+    /* Minimalist card styling */
+    .minimal-panel {
+      background: #111115;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+    }
+
+    .minimal-card {
+      background: #16161c;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.15s ease-out;
+    }
+    .minimal-card:hover:not(:disabled) {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: #1a1a22;
+    }
+    .minimal-card:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    /* Primary elegant button */
+    .btn-primary {
+      background: #f4f4f5;
+      color: #09090b;
+      font-weight: 600;
+      transition: all 0.15s ease-out;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.12);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn-primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* Secondary outline button */
+    .btn-secondary {
+      background: #18181f;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #d4d4d8;
+      transition: all 0.15s ease-out;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #22222b;
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Smooth animated timer bar */
+    .timer-bar {
+      transition: width 1s linear;
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 bg-grid min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
+
+  <!-- Top Navigation Bar -->
+  <header class="w-full max-w-xl flex items-center justify-between py-2 mb-4 border-b border-zinc-900">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black tracking-widest text-zinc-300">
+        B&amp;B
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-tight text-zinc-100 uppercase" id="headerAppTitle">
+          Bluff &amp; Baffle
+        </h1>
+        <p class="text-[11px] text-zinc-500 font-medium" id="headerSubTitle">
+          A game of believable lies.
+        </p>
+      </div>
+    </div>
+
+    <!-- Controls: Language & Sound -->
+    <div class="flex items-center gap-2">
+      <!-- Mute/Sound Button -->
+      <button id="soundToggleBtn" onclick="toggleSound()" class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition flex items-center justify-center text-xs" title="Toggle Audio">
+        🔊
+      </button>
+
+      <!-- Language Toggle Pill -->
+      <button id="uiLangToggleBtn" onclick="toggleUiLanguage()" class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition flex items-center gap-1.5">
+        <span class="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">LANG:</span>
+        <span id="currentUiLangLabel" class="text-zinc-100">हिन्दी</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed top-14 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-sm pointer-events-none flex flex-col gap-2"></div>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="w-full max-w-xl flex-1 flex flex-col justify-center my-auto">
+
+    <!-- SCREEN 1: WELCOME (JOIN / CREATE) -->
+    <section id="screenWelcome" class="minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-6">
+      <div class="space-y-1.5 text-left">
+        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-medium text-zinc-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>2–8 Players • Real-time Party</span>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight text-zinc-100" id="welcomeTagline">
+          Spot the real truth.
+        </h2>
+        <p class="text-xs text-zinc-400 leading-relaxed" id="welcomeSub">
+          Write convincing fake answers to obscure real facts. Deceive your friends, detect the truth, and climb the leaderboard.
+        </p>
+      </div>
+
+      <!-- Segmented Tab: Join vs Create -->
+      <div class="grid grid-cols-2 p-1 bg-zinc-950 rounded-xl border border-zinc-850">
+        <button id="tabJoin" onclick="switchTab('join')" class="py-2 rounded-lg font-semibold text-xs transition bg-zinc-900 text-zinc-100 shadow-sm border border-zinc-800">
+          Join Room
+        </button>
+        <button id="tabCreate" onclick="switchTab('create')" class="py-2 rounded-lg font-semibold text-xs transition text-zinc-400 hover:text-zinc-200">
+          Create Room
+        </button>
+      </div>
+
+      <!-- Form Inputs -->
+      <div class="space-y-4">
+        <!-- Nickname -->
+        <div>
+          <label class="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5" id="lblNickname">
+            Nickname
+          </label>
+          <input type="text" id="inputNickname" maxlength="14" placeholder="Enter your name" 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 font-medium text-sm transition">
+        </div>
+
+        <!-- Room Code (Join Tab) -->
+        <div id="roomCodeGroup">
+          <label class="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5" id="lblRoomCode">
+            Room Code
+          </label>
+          <input type="text" id="inputRoomCode" maxlength="4" placeholder="ABCD" 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-mono font-bold text-center text-lg tracking-widest uppercase placeholder-zinc-700 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition">
+        </div>
+
+        <!-- Language Preference (Create Tab) -->
+        <div id="gameLangGroup" class="hidden">
+          <label class="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5" id="lblGameLang">
+            Question Language
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="selectGameLang('hi')" id="langBtnHi" class="p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition border-zinc-400 bg-zinc-850 text-white">
+              <span>🇮🇳</span>
+              <span class="text-[11px]">हिन्दी (आसान)</span>
+            </button>
+            <button type="button" onclick="selectGameLang('en')" id="langBtnEn" class="p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-200">
+              <span>🇬🇧</span>
+              <span class="text-[11px]">English</span>
+            </button>
+            <button type="button" onclick="selectGameLang('mix')" id="langBtnMix" class="p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-200">
+              <span>🔀</span>
+              <span class="text-[11px]">Mixed</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Avatar & Color Selector -->
+        <div>
+          <label class="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5" id="lblAvatar">
+            Select Avatar
+          </label>
+          <div class="flex items-center gap-2 overflow-x-auto py-1.5" id="avatarPickerContainer">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="btnMainAction" onclick="submitWelcomeForm()" class="w-full py-3 rounded-xl font-semibold text-sm btn-primary mt-2">
+          Join Room
+        </button>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: LOBBY -->
+    <section id="screenLobby" class="hidden minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-6">
+      <!-- Room Code & Quick Join Link -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-5 border-b border-zinc-800/80">
+        <div class="text-center sm:text-left space-y-1">
+          <span class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Room Code</span>
+          <div class="flex items-center justify-center sm:justify-start gap-2.5">
+            <span id="lobbyRoomCode" class="text-3xl font-mono font-bold tracking-widest text-zinc-100">
+              ----
+            </span>
+            <button onclick="copyRoomLink()" class="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 text-xs font-medium transition flex items-center gap-1.5">
+              <span>Copy Link</span>
+            </button>
+          </div>
+          <p class="text-[11px] text-zinc-500 font-mono truncate max-w-xs" id="lobbyUrlText">http://localhost:3000</p>
+        </div>
+
+        <!-- Sleek QR Code Frame -->
+        <div class="p-2 rounded-xl bg-white flex flex-col items-center shadow-md">
+          <img id="lobbyQrCode" src="" alt="Room QR Code" class="w-20 h-20 object-contain rounded">
+          <span class="text-[9px] font-bold text-zinc-800 uppercase tracking-wider mt-1">Scan to Join</span>
+        </div>
+      </div>
+
+      <!-- Player List -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-semibold text-zinc-300 uppercase tracking-wider text-[11px]" id="lobbyPlayersHeader">
+            Players Joined
+          </span>
+          <span id="lobbyPlayerCountBadge" class="font-mono text-[11px] text-zinc-500">
+            0 / 8
+          </span>
+        </div>
+
+        <div id="lobbyPlayersGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Host Controls -->
+      <div id="lobbyHostArea" class="hidden pt-4 border-t border-zinc-800/80 flex flex-col gap-3">
+        <div class="flex items-center justify-between text-xs text-zinc-400">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-zinc-500">Language:</span>
+            <select id="lobbyLangSelect" onchange="changeLobbySettings()" class="bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none font-medium">
+              <option value="hi">हिन्दी (आसान बोलचाल)</option>
+              <option value="en">English</option>
+              <option value="mix">Mixed (Alternating)</option>
+            </select>
+          </div>
+          <span class="text-[11px] text-zinc-500">3 Rounds • 2 Questions each</span>
+        </div>
+
+        <button id="btnStartGame" onclick="requestStartGame()" class="w-full py-3 rounded-xl font-semibold text-sm btn-primary">
+          Start Match
+        </button>
+      </div>
+
+      <!-- Non-Host Waiting Indicator -->
+      <div id="lobbyWaitArea" class="hidden text-center py-4 rounded-xl bg-zinc-950/60 border border-zinc-850">
+        <p class="text-xs text-zinc-400 font-medium" id="lobbyWaitingMsg">Waiting for the host to start the match...</p>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: PROMPT PHASE (BLUFF SUBMISSION) -->
+    <section id="screenPrompt" class="hidden minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-5">
+      <!-- Round Info & Timer -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span id="promptRoundBadge" class="font-semibold text-zinc-300 uppercase tracking-wider text-[11px]">
+              Round 1
+            </span>
+            <span class="text-zinc-600">•</span>
+            <span id="promptCategoryBadge" class="text-zinc-400 text-[11px]">
+              Category
+            </span>
+          </div>
+
+          <div class="font-mono text-xs font-semibold text-zinc-400 flex items-center gap-1" id="promptTimerWrapper">
+            <span>⏱️</span>
+            <span id="promptTimerSec">35</span>s
+          </div>
+        </div>
+
+        <!-- Linear Countdown Progress Bar -->
+        <div class="w-full h-1 bg-zinc-850 rounded-full overflow-hidden">
+          <div id="promptTimerBar" class="timer-bar h-full bg-zinc-300 w-full rounded-full"></div>
+        </div>
+      </div>
+
+      <!-- Question Card -->
+      <div class="p-5 md:p-6 rounded-xl bg-zinc-925 border border-zinc-800">
+        <p id="promptQuestionText" class="text-base md:text-lg font-medium leading-relaxed text-zinc-100 text-left">
+          Question prompt loading...
+        </p>
+      </div>
+
+      <!-- Bluff Input Form -->
+      <div id="bluffInputArea" class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider" id="lblWriteBluff">
+            Write your bluff
+          </label>
+          <span class="text-[10px] text-zinc-500 font-mono" id="bluffCharCounter">0/80</span>
+        </div>
+
+        <textarea id="inputBluff" rows="2" maxlength="80" placeholder="Type a believable fake answer..." 
+          class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 text-sm font-medium resize-none transition"
+          oninput="document.getElementById('bluffCharCounter').textContent = this.value.length + '/80'"></textarea>
+
+        <button id="btnSubmitBluff" onclick="submitBluff()" class="w-full py-2.5 rounded-xl font-semibold text-sm btn-primary">
+          Submit Answer
+        </button>
+      </div>
+
+      <!-- Submitted State Banner -->
+      <div id="bluffSubmittedArea" class="hidden p-4 rounded-xl bg-zinc-925 border border-zinc-800 text-center space-y-1">
+        <h4 class="font-semibold text-xs text-zinc-200" id="bluffLockedTitle">Answer Locked</h4>
+        <p class="text-[11px] text-zinc-500" id="bluffLockedSubtitle">Waiting for other players to submit...</p>
+      </div>
+
+      <!-- Submissions Progress Tracker -->
+      <div class="pt-2 border-t border-zinc-850 flex items-center justify-between text-xs text-zinc-500">
+        <span class="text-[11px]" id="lblWhoSubmitted">Submissions:</span>
+        <div id="bluffPlayersStatus" class="flex items-center gap-1.5 flex-wrap">
+          <!-- Player status dots -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: VOTING PHASE -->
+    <section id="screenVoting" class="hidden minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-5">
+      <!-- Header & Timer -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">PHASE: VOTING</span>
+            <h3 class="text-sm font-semibold text-zinc-100" id="votingMainTitle">Spot the Truth</h3>
+          </div>
+          <div class="font-mono text-xs font-semibold text-zinc-400 flex items-center gap-1" id="votingTimerWrapper">
+            <span>⏱️</span>
+            <span id="votingTimerSec">25</span>s
+          </div>
+        </div>
+
+        <!-- Linear Timer Bar -->
+        <div class="w-full h-1 bg-zinc-850 rounded-full overflow-hidden">
+          <div id="votingTimerBar" class="timer-bar h-full bg-zinc-300 w-full rounded-full"></div>
+        </div>
+      </div>
+
+      <!-- Question Prompt Reminder -->
+      <div class="p-3 bg-zinc-925 rounded-xl border border-zinc-850 text-xs text-zinc-400 text-left line-clamp-2" id="votingQuestionReminder">
+        Prompt reminder...
+      </div>
+
+      <!-- Shuffled Voting Cards List -->
+      <div id="votingCardsGrid" class="flex flex-col gap-2.5">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div id="votedConfirmedArea" class="hidden p-3 rounded-xl bg-zinc-925 border border-zinc-800 text-center text-xs text-zinc-400 font-medium">
+        Vote recorded. Waiting for others...
+      </div>
+    </section>
+
+    <!-- SCREEN 5: REVEAL PHASE -->
+    <section id="screenReveal" class="hidden minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-5">
+      <div class="flex items-center justify-between border-b border-zinc-850 pb-3">
+        <div>
+          <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">PHASE: RESULTS</span>
+          <h3 class="text-sm font-semibold text-zinc-100" id="revealTitleHeader">Card Reveal</h3>
+        </div>
+        <span id="revealStepCounter" class="text-xs font-mono text-zinc-500">1/1</span>
+      </div>
+
+      <!-- Dynamic Reveal Stage Card -->
+      <div id="revealShowcaseContainer" class="space-y-4">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Proceed Button -->
+      <div class="pt-2 flex justify-end">
+        <button id="btnProceedScoreboard" onclick="requestProceedScoreboard()" class="px-5 py-2 rounded-xl font-semibold text-xs btn-primary">
+          View Leaderboard
+        </button>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: SCOREBOARD PHASE -->
+    <section id="screenScoreboard" class="hidden minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-5">
+      <div class="flex items-center justify-between border-b border-zinc-850 pb-3">
+        <div>
+          <span id="scoreboardRoundBadge" class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+            ROUND 1 COMPLETE
+          </span>
+          <h3 class="text-sm font-semibold text-zinc-100" id="scoreboardHeader">Leaderboard</h3>
+        </div>
+      </div>
+
+      <!-- Leaderboard List -->
+      <div id="leaderboardList" class="flex flex-col gap-2">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Host Action Controls -->
+      <div id="scoreboardHostControls" class="pt-3 flex justify-end">
+        <button id="btnNextQuestion" onclick="requestNextQuestion()" class="px-5 py-2 rounded-xl font-semibold text-xs btn-primary">
+          Next Question
+        </button>
+      </div>
+    </section>
+
+    <!-- SCREEN 7: GAME OVER & PODIUM -->
+    <section id="screenGameOver" class="hidden minimal-panel rounded-2xl p-6 md:p-8 flex flex-col gap-6 text-center">
+      <div class="space-y-1">
+        <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">MATCH CONCLUDED</span>
+        <h3 class="text-2xl font-bold tracking-tight text-zinc-100" id="podiumHeader">
+          Final Results
+        </h3>
+      </div>
+
+      <!-- Minimalist Clean Podium Cards -->
+      <div id="podiumTop3" class="grid grid-cols-3 gap-2 items-end pt-2">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Superlatives -->
+      <div id="podiumSuperlatives" class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Full Standings -->
+      <div id="podiumAllScores" class="flex flex-col gap-1.5 pt-2 border-t border-zinc-850 text-left">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="pt-2 flex justify-center">
+        <button id="btnPlayAgain" onclick="requestPlayAgain()" class="px-6 py-2.5 rounded-xl font-semibold text-xs btn-primary">
+          Play Again
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Minimal Footer -->
+  <footer class="w-full max-w-xl py-3 border-t border-zinc-900 text-center text-[11px] text-zinc-600 font-medium">
+    Bluff &amp; Baffle • Real-time multiplayer
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/sound.js"></script>
+  <script src="/i18n.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
